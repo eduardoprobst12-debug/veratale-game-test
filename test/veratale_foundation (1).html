@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VERATALE FOUNDATION</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: #050608;
+            font-family: 'Press Start 2P', monospace;
+            color: #ffffff;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            background-color: #0d0e15;
+            border: 4px solid #1a233a;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.9), 0 0 15px rgba(100, 255, 218, 0.2);
+            overflow: hidden;
+        }
+
+        /* Generic Screen Wrapper */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+        }
+
+        /* Loading Screen */
+        #loading-screen {
+            background-color: #07080c;
+            z-index: 20;
+        }
+
+        .loading-title {
+            font-size: 16px;
+            color: #64ffda;
+            margin-bottom: 30px;
+            text-align: center;
+            line-height: 1.8;
+            letter-spacing: 2px;
+            text-shadow: 0 0 8px rgba(100, 255, 218, 0.6);
+        }
+
+        .progress-box {
+            width: 400px;
+            height: 26px;
+            border: 3px solid #ffffff;
+            padding: 3px;
+            background-color: #000;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff5722, #64ffda);
+            transition: width 0.05s linear;
+        }
+
+        .loading-percentage {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #aaaaaa;
+        }
+
+        /* Start Screen (Menu) */
+        #title-screen {
+            display: none;
+            z-index: 10;
+            padding-top: 20px;
+            justify-content: flex-start;
+        }
+
+        .main-logo-img {
+            max-width: 520px;
+            max-height: 270px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            margin-top: 25px;
+            margin-bottom: 25px;
+            filter: drop-shadow(0px 0px 18px rgba(100, 255, 218, 0.35));
+            border-radius: 6px;
+        }
+
+        .menu-container {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            z-index: 12;
+            width: 100%;
+            align-items: center;
+        }
+
+        .menu-btn {
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 10px 20px;
+            transition: transform 0.1s, color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 320px;
+            text-align: center;
+        }
+
+        .menu-btn:hover, .menu-btn.selected {
+            color: #ff5722;
+            text-shadow: 2px 2px #550000;
+            transform: scale(1.05);
+        }
+
+        .menu-btn::before {
+            content: '';
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            opacity: 0;
+            background-color: #ff5722;
+            clip-path: polygon(0% 0%, 100% 50%, 0% 100%);
+        }
+
+        .menu-btn:hover::before, .menu-btn.selected::before {
+            opacity: 1;
+        }
+
+        /* Modals (TECLAS / SOBRE O PERSONAGEM) */
+        .modal {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 620px;
+            background-color: rgba(13, 14, 21, 0.98);
+            border: 4px solid #ffffff;
+            padding: 25px;
+            z-index: 30;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.95);
+        }
+
+        .modal h2 {
+            font-size: 16px;
+            color: #64ffda;
+            margin-bottom: 20px;
+            text-align: center;
+            letter-spacing: 1px;
+            border-bottom: 2px dashed #64ffda;
+            padding-bottom: 10px;
+        }
+
+        .modal-body {
+            font-size: 11px;
+            line-height: 1.9;
+            color: #dddddd;
+        }
+
+        .key-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 6px 12px;
+            border-radius: 4px;
+        }
+
+        .key-badge {
+            color: #ff5722;
+            font-weight: bold;
+        }
+
+        .char-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 15px;
+            background: rgba(100, 255, 218, 0.05);
+            padding: 12px;
+            border: 1px solid rgba(100, 255, 218, 0.2);
+        }
+
+        .stat-item {
+            font-size: 10px;
+            color: #ffaa55;
+        }
+
+        .stat-item span {
+            color: #ffffff;
+        }
+
+        .close-btn {
+            display: block;
+            margin: 20px auto 0 auto;
+            background: #ff5722;
+            color: #fff;
+            border: 2px solid #ffffff;
+            font-family: 'Press Start 2P', monospace;
+            padding: 10px 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .close-btn:hover {
+            background: #e04818;
+            transform: scale(1.05);
+        }
+
+        /* Gameplay Area */
+        #game-screen {
+            display: none;
+            z-index: 10;
+            background-color: #000000;
+        }
+
+        #game-canvas {
+            pointer-events: auto;
+        }
+
+        /* Touch Controls */
+        .touch-controls {
+            display: none;
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            grid-template-columns: repeat(3, 45px);
+            grid-template-rows: repeat(2, 45px);
+            gap: 8px;
+            z-index: 25;
+        }
+
+        .touch-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid #ffffff;
+            color: #fff;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            touch-action: manipulation;
+        }
+
+        .touch-btn:active {
+            background: rgba(100, 255, 218, 0.4);
+        }
+
+        @media (max-width: 820px) {
+            #game-container {
+                width: 100vw;
+                height: 100vh;
+                border: none;
+            }
+            .main-logo-img {
+                max-width: 90%;
+            }
+            .touch-controls {
+                display: grid;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    
+    <!-- 1. Tela de Carregamento (5 Segundos Exactos) -->
+    <div id="loading-screen" class="screen">
+        <div class="loading-title">CARREGANDO<br>VERATALE FOUNDATION...</div>
+        <div class="progress-box">
+            <div id="progress-bar" class="progress-bar"></div>
+        </div>
+        <div id="loading-text" class="loading-percentage">0%</div>
+    </div>
+
+    <!-- 2. Tela de Início (Start Screen com Imagem Base64 + 3 Opções) -->
+    <div id="title-screen" class="screen">
+        <!-- Foto de Abertura Fornecida Embutida em Base64 -->
+        <img class="main-logo-img" src="./assets/veratale-foundation.jpg">
+        
+        <!-- Três Botões do Menu Inicial -->
+        <div class="menu-container">
+            <button class="menu-btn" onclick="startGameplay()">1. JOGAR</button>
+            <button class="menu-btn" onclick="showModal('keys-modal')">2. TECLAS</button>
+            <button class="menu-btn" onclick="showModal('character-modal')">3. SOBRE O PERSONAGEM</button>
+        </div>
+    </div>
+
+    <!-- 3. Tela do Jogo (Gameplay Undertale Style) -->
+    <div id="game-screen" class="screen">
+        <canvas id="game-canvas" width="800" height="600"></canvas>
+    </div>
+
+    <!-- Modal 1: TECLAS -->
+    <div id="keys-modal" class="modal">
+        <h2>CONTROLES E TECLAS</h2>
+        <div class="modal-body">
+            <div class="key-row">
+                <span>MOVER A ALMA (CORAÇÃO):</span>
+                <span class="key-badge">SETAS / WASD</span>
+            </div>
+            <div class="key-row">
+                <span>SELECIONAR / CONFIRMAR:</span>
+                <span class="key-badge">Z / ENTER</span>
+            </div>
+            <div class="key-row">
+                <span>VOLTAR / CANCELAR:</span>
+                <span class="key-badge">X / ESC</span>
+            </div>
+            <div class="key-row">
+                <span>MODO LENTO (PRECISÃO):</span>
+                <span class="key-badge">SHIFT</span>
+            </div>
+            <div class="key-row">
+                <span>REINICIAR QUANDO DEREM DERROTA:</span>
+                <span class="key-badge">R</span>
+            </div>
+        </div>
+        <button class="close-btn" onclick="hideModal('keys-modal')">FECHAR</button>
+    </div>
+
+    <!-- Modal 2: SOBRE O PERSONAGEM -->
+    <div id="character-modal" class="modal">
+        <h2>SOBRE O PERSONAGEM</h2>
+        <div class="modal-body">
+            <p><strong style="color: #64ffda;">NOME DA ALMA:</strong> ALMA DUAL DE VERATALE</p>
+            <p>Um receptáculo único nascido do equilíbrio da Fundação. Sua alma é dividida verticalmente em dois atributos essenciais:</p>
+            
+            <p style="margin-top: 8px;">
+                • <strong style="color: #ff5722;">Lado Laranja (Esquerdo):</strong> A chama da Determinação Bruta e Coragem Inquebrável.<br>
+                • <strong style="color: #8892b0;">Lado Cinza (Direito):</strong> A essência do Mistério, Calmaria e Neutralidade Absoluta.
+            </p>
+
+            <div class="char-stats">
+                <div class="stat-item">VIDA (HP): <span>100 / 100</span></div>
+                <div class="stat-item">ATAQUE (ATK): <span>15 (LV 1)</span></div>
+                <div class="stat-item">DEFESA (DEF): <span>10</span></div>
+                <div class="stat-item">ESTADO: <span>EQUALIZADO</span></div>
+            </div>
+        </div>
+        <button class="close-btn" onclick="hideModal('character-modal')">FECHAR</button>
+    </div>
+
+    <!-- Controles para Mobile / Touch Screen -->
+    <div id="touch-controls" class="touch-controls">
+        <div></div>
+        <div class="touch-btn" id="btn-up">▲</div>
+        <div></div>
+        <div class="touch-btn" id="btn-left">◄</div>
+        <div class="touch-btn" id="btn-down">▼</div>
+        <div class="touch-btn" id="btn-right">►</div>
+    </div>
+</div>
+
+<script>
+// Substituição completa da imagem Base64 fornecida para exibição exata na tela de abertura
+document.getElementById('logo-img').src = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1EAF1bX15fPC1hb3Bcd2ZmX13/2wBDARERER4RHGMaGi9aW0RbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1v/wAARCAEgAeADASIAAhEBAxEB/8QAGwABAAMBAQEBAAAAAAAAAAAAAAECAwQFBgf/xAA5EAACAQMCBAUDAgUDBQEBAAABAgMABBEhMUEFEUJREhNhcYGhMhQiM0KxwRUjNENi4SSCsvAH/8oADAMBADrawinglogo";
+</script>
+
+<script>
+// --- SINTETIZADOR DE ÁUDIO RETRO (Web Audio API) ---
+class RetroAudio {
+    constructor() {
+        this.ctx = null;
+    }
+
+    init() {
+        if (!this.ctx) {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+    }
+
+    playSelect() {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(440, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.08);
+    }
+
+    playHit() {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(160, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.2);
+    }
+
+    playStart() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(261.63, now);
+        osc.frequency.setValueAtTime(329.63, now + 0.1);
+        osc.frequency.setValueAtTime(392.00, now + 0.2);
+        osc.frequency.setValueAtTime(523.25, now + 0.3);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.5);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.5);
+    }
+}
+
+const audioFX = new RetroAudio();
+
+// --- TELA DE CARREGAMENTO (5 SEGUNDOS EXATOS) ---
+const loadingDuration = 5000;
+const updateInterval = 50;
+let elapsedTime = 0;
+
+const progressBar = document.getElementById('progress-bar');
+const loadingText = document.getElementById('loading-text');
+const loadingScreen = document.getElementById('loading-screen');
+const titleScreen = document.getElementById('title-screen');
+
+const loadingTimer = setInterval(() => {
+    elapsedTime += updateInterval;
+    let percentage = Math.min(100, Math.floor((elapsedTime / loadingDuration) * 100));
+    
+    progressBar.style.width = percentage + '%';
+    loadingText.textContent = percentage + '%';
+
+    if (elapsedTime >= loadingDuration) {
+        clearInterval(loadingTimer);
+        setTimeout(showStartScreen, 200);
+    }
+}, updateInterval);
+
+function showStartScreen() {
+    loadingScreen.style.display = 'none';
+    titleScreen.style.display = 'flex';
+}
+
+// Controls for Modals
+function showModal(id) {
+    audioFX.init();
+    audioFX.playSelect();
+    document.getElementById(id).style.display = 'block';
+}
+
+function hideModal(id) {
+    audioFX.init();
+    audioFX.playSelect();
+    document.getElementById(id).style.display = 'none';
+}
+
+// --- SISTEMA DE GAMEPLAY (UNDERTALE BATTLE) ---
+const gameScreen = document.getElementById('game-screen');
+const gameCanvas = document.getElementById('game-canvas');
+const ctx = gameCanvas.getContext('2d');
+
+let gameLoopId = null;
+let gameState = 'STOPPED'; // 'PLAYING', 'GAMEOVER', 'DIALOGUE'
+
+// Caixa de Batalha (Bounding Box)
+const box = {
+    x: 230,
+    y: 230,
+    width: 340,
+    height: 180
+};
+
+// Jogador (Alma de Coração Dividido)
+const player = {
+    x: 400,
+    y: 320,
+    size: 16,
+    speed: 3.2,
+    hp: 100,
+    maxHp: 100,
+    invulnerable: 0
+};
+
+// Botões de Ação Undertale (ATK, ACT, ITEM, MERCY)
+const battleActions = ['ATACAR', 'AGIR', 'ITEM', 'POUPAR'];
+let selectedAction = 0;
+
+let bullets = [];
+let score = 0;
+let survivalTimer = 0;
+let dialogueText = "* A Fundação te observa silenciosamente...";
+
+const keys = {};
+
+window.addEventListener('keydown', (e) => {
+    audioFX.init();
+    keys[e.key] = true;
+
+    if (gameState === 'PLAYING') {
+        if (e.key === 'ArrowLeft' || e.key === 'a') {
+            selectedAction = (selectedAction - 1 + 4) % 4;
+            audioFX.playSelect();
+        } else if (e.key === 'ArrowRight' || e.key === 'd') {
+            selectedAction = (selectedAction + 1) % 4;
+            audioFX.playSelect();
+        } else if (e.key === 'z' || e.key === 'Enter') {
+            triggerAction(selectedAction);
+        }
+    }
+});
+
+window.addEventListener('keyup', (e) => {
+    keys[e.key] = false;
+});
+
+function triggerAction(index) {
+    audioFX.playSelect();
+    switch(index) {
+        case 0: // ATACAR
+            dialogueText = "* Você desferiu um golpe na Fundação! (Dano 12)";
+            score += 50;
+            break;
+        case 1: // AGIR
+            dialogueText = "* Você conversa. O ar vibra com determinação.";
+            player.hp = Math.min(player.maxHp, player.hp + 5);
+            break;
+        case 2: // ITEM
+            dialogueText = "* Você comeu o Torta de Maçã de Veratale. (+20 HP)";
+            player.hp = Math.min(player.maxHp, player.hp + 20);
+            break;
+        case 3: // POUPAR
+            dialogueText = "* Você poupou seu oponente.";
+            score += 100;
+            break;
+    }
+}
+
+function startGameplay() {
+    audioFX.init();
+    audioFX.playStart();
+    
+    titleScreen.style.display = 'none';
+    gameScreen.style.display = 'flex';
+
+    gameState = 'PLAYING';
+    player.x = box.x + box.width / 2;
+    player.y = box.y + box.height / 2;
+    player.hp = 100;
+    player.invulnerable = 0;
+    bullets = [];
+    score = 0;
+    survivalTimer = 0;
+
+    gameLoop();
+}
+
+function spawnBullets() {
+    survivalTimer++;
+
+    // Projéteis vindo de cima
+    if (survivalTimer % 20 === 0) {
+        bullets.push({
+            x: box.x + Math.random() * (box.width - 10),
+            y: box.y - 10,
+            vx: (Math.random() - 0.5) * 1.2,
+            vy: Math.random() * 2 + 2,
+            size: 8,
+            color: '#64ffda'
+        });
+    }
+
+    // Lanças laterais
+    if (survivalTimer % 40 === 0) {
+        let side = Math.random() > 0.5 ? 'left' : 'right';
+        bullets.push({
+            x: side === 'left' ? box.x - 10 : box.x + box.width + 10,
+            y: box.y + Math.random() * (box.height - 10),
+            vx: side === 'left' ? 3.2 : -3.2,
+            vy: 0,
+            size: 10,
+            color: '#ff5722'
+        });
+    }
+}
+
+function updateGame() {
+    if (gameState !== 'PLAYING') return;
+
+    // Movimentação do Coração
+    let moveSpeed = keys['Shift'] ? player.speed * 0.5 : player.speed;
+    let dx = 0;
+    let dy = 0;
+
+    if (keys['ArrowLeft'] || keys['a'] || keys['A']) dx -= 1;
+    if (keys['ArrowRight'] || keys['d'] || keys['D']) dx += 1;
+    if (keys['ArrowUp'] || keys['w'] || keys['W']) dy -= 1;
+    if (keys['ArrowDown'] || keys['s'] || keys['S']) dy += 1;
+
+    if (dx !== 0 && dy !== 0) {
+        dx *= 0.7071;
+        dy *= 0.7071;
+    }
+
+    player.x += dx * moveSpeed;
+    player.y += dy * moveSpeed;
+
+    // Limites da caixa
+    const half = player.size / 2;
+    if (player.x - half < box.x) player.x = box.x + half;
+    if (player.x + half > box.x + box.width) player.x = box.x + box.width - half;
+    if (player.y - half < box.y) player.y = box.y + half;
+    if (player.y + half > box.y + box.height) player.y = box.y + box.height - half;
+
+    if (player.invulnerable > 0) player.invulnerable--;
+
+    spawnBullets();
+
+    // Atualização de projéteis
+    for (let i = bullets.length - 1; i >= 0; i--) {
+        let b = bullets[i];
+        b.x += b.vx;
+        b.y += b.vy;
+
+        let dist = Math.hypot(player.x - b.x, player.y - b.y);
+        if (dist < (player.size / 2 + b.size / 2) && player.invulnerable === 0) {
+            player.hp -= 12;
+            player.invulnerable = 25;
+            audioFX.playHit();
+
+            if (player.hp <= 0) {
+                player.hp = 0;
+                gameState = 'GAMEOVER';
+            }
+        }
+
+        if (b.x < box.x - 20 || b.x > box.x + box.width + 20 ||
+            b.y < box.y - 20 || b.y > box.y + box.height + 20) {
+            bullets.splice(i, 1);
+        }
+    }
+
+    score++;
+}
+
+function drawGame() {
+    ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+    // Fundo Preto Batalha
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, 800, 600);
+
+    // 1. Inimigo (Ovo/Coração Místico)
+    ctx.fillStyle = '#64ffda';
+    ctx.fillRect(380, 80, 40, 40);
+    ctx.fillStyle = '#ff5722';
+    ctx.fillRect(390, 90, 20, 20);
+
+    // 2. Caixa do Diálogo / Texto
+    ctx.font = '11px "Press Start 2P"';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'left';
+    ctx.fillText(dialogueText, 180, 200);
+
+    // 3. Caixa de Esqueiva (Bounding Box)
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(box.x, box.y, box.width, box.height);
+
+    // 4. Projéteis
+    for (let b of bullets) {
+        ctx.fillStyle = b.color;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.size / 2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // 5. Coração Dividido do Jogador
+    if (gameState === 'PLAYING') {
+        if (player.invulnerable % 4 < 2) {
+            drawDualHeart(ctx, player.x, player.y, 1.2);
+        }
+    }
+
+    // 6. HUD de Vida
+    ctx.font = '12px "Press Start 2P"';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(`VERATALE   LV 1`, 180, 435);
+    ctx.fillText(`HP`, 400, 435);
+
+    // Barra HP
+    ctx.fillStyle = '#ff0000';
+    ctx.fillRect(435, 423, 120, 16);
+    ctx.fillStyle = '#ffff00';
+    ctx.fillRect(435, 423, (player.hp / player.maxHp) * 120, 16);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(`${player.hp} / ${player.maxHp}`, 570, 435);
+
+    // 7. Botões de Ação Undertale (ATACAR, AGIR, ITEM, POUPAR)
+    const btnWidth = 125;
+    const btnHeight = 38;
+    const startX = 120;
+    const startY = 470;
+    const gap = 22;
+
+    for (let i = 0; i < battleActions.length; i++) {
+        let x = startX + i * (btnWidth + gap);
+        let selected = (i === selectedAction);
+
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = selected ? '#ff5722' : '#c5a059';
+        ctx.strokeRect(x, startY, btnWidth, btnHeight);
+
+        ctx.font = '10px "Press Start 2P"';
+        ctx.fillStyle = selected ? '#ff5722' : '#c5a059';
+        ctx.textAlign = 'center';
+        ctx.fillText(battleActions[i], x + btnWidth / 2, startY + 23);
+
+        if (selected) {
+            drawDualHeart(ctx, x + 15, startY + 19, 0.7);
+        }
+    }
+
+    // 8. Game Over Overlay
+    if (gameState === 'GAMEOVER') {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.88)';
+        ctx.fillRect(0, 0, 800, 600);
+
+        ctx.font = '22px "Press Start 2P"';
+        ctx.fillStyle = '#ff5722';
+        ctx.textAlign = 'center';
+        ctx.fillText("SUA ALMA SE PARTIU...", 400, 260);
+
+        ctx.font = '12px "Press Start 2P"';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(`PONTUAÇÃO: ${score}`, 400, 310);
+
+        ctx.fillStyle = '#64ffda';
+        ctx.fillText("PRESSIONE 'R' PARA TENTAR NOVAMENTE", 400, 370);
+    }
+}
+
+// Desenha o coração dividido em Laranja (Esquerda) e Cinza (Direita)
+function drawDualHeart(ctx, x, y, scale) {
+    ctx.save();
+    ctx.translate(x, y);
+    const p = scale;
+
+    // Metade Esquerda Laranja
+    ctx.fillStyle = '#ff5722';
+    ctx.beginPath();
+    ctx.moveTo(0, 6 * p);
+    ctx.lineTo(-6 * p, 0);
+    ctx.lineTo(-6 * p, -4 * p);
+    ctx.lineTo(-3 * p, -7 * p);
+    ctx.lineTo(0, -4 * p);
+    ctx.closePath();
+    ctx.fill();
+
+    // Metade Direita Cinza
+    ctx.fillStyle = '#8892b0';
+    ctx.beginPath();
+    ctx.moveTo(0, 6 * p);
+    ctx.lineTo(6 * p, 0);
+    ctx.lineTo(6 * p, -4 * p);
+    ctx.lineTo(3 * p, -7 * p);
+    ctx.lineTo(0, -4 * p);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+}
+
+function gameLoop() {
+    updateGame();
+    drawGame();
+
+    if (gameState === 'PLAYING' || gameState === 'GAMEOVER') {
+        gameLoopId = requestAnimationFrame(gameLoop);
+    }
+}
+
+// Reiniciar no R
+window.addEventListener('keydown', (e) => {
+    if ((e.key === 'r' || e.key === 'R') && gameState === 'GAMEOVER') {
+        startGameplay();
+    }
+});
+
+// Suporte para botões touch
+const touchBtns = {
+    'btn-up': 'ArrowUp',
+    'btn-down': 'ArrowDown',
+    'btn-left': 'ArrowLeft',
+    'btn-right': 'ArrowRight'
+};
+
+Object.keys(touchBtns).forEach(id => {
+    const btn = document.getElementById(id);
+    const key = touchBtns[id];
+
+    btn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        keys[key] = true;
+    });
+    btn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        keys[key] = false;
+    });
+});
+</script>
+</body>
+</html>
